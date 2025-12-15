@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface Card {
@@ -39,14 +39,16 @@ const positionStyles = [
 ]
 
 const exitAnimation = {
-  y: 340,
+  y: 420,
   scale: 1,
+  opacity: 0,
   zIndex: 10,
 }
 
 const enterAnimation = {
   y: -16,
   scale: 0.9,
+  opacity: 0,
 }
 
 function CardContent({ contentType }: { contentType: 1 | 2 | 3 }) {
@@ -54,7 +56,7 @@ function CardContent({ contentType }: { contentType: 1 | 2 | 3 }) {
 
   return (
     <div className="flex h-full w-full flex-col gap-4">
-      <div className="-outline-offset-1 flex h-[200px] w-full items-center justify-center overflow-hidden rounded-lg outline outline-black/10 dark:outline-white/10">
+      <div className="-outline-offset-1 flex h-[280px] w-full items-center justify-center overflow-hidden rounded-lg outline outline-black/10 dark:outline-white/10">
         <img
           src={data.image || "/placeholder.svg"}
           alt={data.title}
@@ -104,12 +106,13 @@ function AnimatedCard({
     <motion.div
       key={card.id}
       initial={initialAnim}
-      animate={{ y, scale }}
+      animate={{ y, scale, opacity: 1 }}
       exit={exitAnim}
       transition={{
         type: "spring",
         duration: 1,
         bounce: 0,
+        opacity: { duration: 0.6, ease: "easeInOut" },
       }}
       style={{
         zIndex,
@@ -117,7 +120,7 @@ function AnimatedCard({
         x: "-50%",
         bottom: 0,
       }}
-      className="absolute flex h-[280px] w-[324px] items-center justify-center overflow-hidden rounded-t-xl border-x border-t border-border bg-card p-1 shadow-lg will-change-transform sm:w-[512px]"
+      className="absolute flex h-[360px] w-[420px] items-center justify-center overflow-hidden rounded-t-xl border-x border-t border-border bg-card p-1 shadow-lg will-change-transform sm:w-[680px]"
     >
       <CardContent contentType={card.contentType} />
     </motion.div>
@@ -128,6 +131,7 @@ export default function AnimatedCardStack() {
   const [cards, setCards] = useState(initialCards)
   const [isAnimating, setIsAnimating] = useState(false)
   const [nextId, setNextId] = useState(4)
+  const [isPlaying, setIsPlaying] = useState(true)
 
   const handleAnimate = () => {
     setIsAnimating(true)
@@ -139,23 +143,25 @@ export default function AnimatedCardStack() {
     setIsAnimating(false)
   }
 
+  // Auto-play functionality
+  useEffect(() => {
+    if (!isPlaying) return
+
+    const interval = setInterval(() => {
+      handleAnimate()
+    }, 3000) // Rotate every 3 seconds
+
+    return () => clearInterval(interval)
+  }, [cards, isPlaying, nextId])
+
   return (
     <div className="flex w-full flex-col items-center justify-center pt-2">
-      <div className="relative h-[380px] w-full overflow-hidden sm:w-[644px]">
+      <div className="relative h-[500px] w-full overflow-hidden sm:w-[800px]">
         <AnimatePresence initial={false}>
           {cards.slice(0, 3).map((card, index) => (
             <AnimatedCard key={card.id} card={card} index={index} isAnimating={isAnimating} />
           ))}
         </AnimatePresence>
-      </div>
-
-      <div className="relative z-10 -mt-px flex w-full items-center justify-center border-t border-border bg-card py-4">
-        <button
-          onClick={handleAnimate}
-          className="flex h-9 cursor-pointer select-none items-center justify-center gap-1 overflow-hidden rounded-lg border border-border bg-secondary px-3 font-medium text-secondary-foreground transition-all hover:bg-secondary/80 active:scale-[0.98]"
-        >
-          Animate
-        </button>
       </div>
     </div>
   )

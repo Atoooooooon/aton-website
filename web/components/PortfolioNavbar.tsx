@@ -84,7 +84,7 @@ export const PortfolioNavbar = () => {
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
               {navigationLinks.map((link) => (
-                link.href.startsWith('/') && link.href !== '/' ? (
+                link.href.startsWith('/') ? (
                   <Link
                     key={link.name}
                     href={link.href}
@@ -169,17 +169,32 @@ export const PortfolioNavbar = () => {
           >
             <div className="px-6 py-6 space-y-4">
               {navigationLinks.map((link) => (
-                <button
-                  key={link.name}
-                  onClick={() => handleLinkClick(link.href)}
-                  className="block w-full text-left text-foreground hover:text-primary py-3 text-lg font-medium transition-colors duration-200"
-                  style={{
-                    fontFamily: "Figtree, sans-serif",
-                    fontWeight: "400",
-                  }}
-                >
-                  <span>{link.name}</span>
-                </button>
+                link.href.startsWith('/') ? (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={closeMobileMenu}
+                    className="block w-full text-left text-foreground hover:text-primary py-3 text-lg font-medium transition-colors duration-200"
+                    style={{
+                      fontFamily: "Figtree, sans-serif",
+                      fontWeight: "400",
+                    }}
+                  >
+                    <span>{link.name}</span>
+                  </Link>
+                ) : (
+                  <button
+                    key={link.name}
+                    onClick={() => handleLinkClick(link.href)}
+                    className="block w-full text-left text-foreground hover:text-primary py-3 text-lg font-medium transition-colors duration-200"
+                    style={{
+                      fontFamily: "Figtree, sans-serif",
+                      fontWeight: "400",
+                    }}
+                  >
+                    <span>{link.name}</span>
+                  </button>
+                )
               ))}
               <div className="pt-4 border-t border-border">
                 <button

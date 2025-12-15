@@ -1,5 +1,5 @@
 "use client"
-import { Github, Twitter, Linkedin, Mail } from "lucide-react"
+import { Github, Linkedin, Mail } from "lucide-react"
 import { motion } from "framer-motion"
 
 type FooterLink = {
@@ -27,56 +27,32 @@ type FooterProps = {
 
 const defaultSections: FooterSection[] = [
   {
-    title: "Product",
+    title: "Navigate",
     links: [
-      { label: "Features", href: "#features" },
-      { label: "Integrations", href: "#integrations" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "API Docs", href: "#api" },
-      { label: "Changelog", href: "#changelog" },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
+      { label: "Home", href: "/" },
+      { label: "Projects", href: "#projects" },
+      { label: "Tools", href: "/tools" },
       { label: "About", href: "#about" },
-      { label: "Careers", href: "#careers" },
-      { label: "Blog", href: "#blog" },
-      { label: "Press Kit", href: "#press" },
-      { label: "Contact", href: "#contact" },
     ],
   },
   {
-    title: "Resources",
+    title: "Connect",
     links: [
-      { label: "Documentation", href: "#docs" },
-      { label: "Help Center", href: "#help" },
-      { label: "Community", href: "#community" },
-      { label: "Case Studies", href: "#case-studies" },
-      { label: "Webinars", href: "#webinars" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { label: "Privacy Policy", href: "#privacy" },
-      { label: "Terms of Service", href: "#terms" },
-      { label: "Security", href: "#security" },
-      { label: "Compliance", href: "#compliance" },
-      { label: "Cookie Policy", href: "#cookies" },
+      { label: "GitHub", href: "https://github.com" },
+      { label: "LinkedIn", href: "https://linkedin.com" },
+      { label: "Email", href: "#contact" },
     ],
   },
 ]
 
 export const Footer = ({
-  companyName = "Auralink",
-  tagline = "The Intelligence Layer for Modern Communication",
+  companyName = "Aton",
+  tagline = "Java Developer & Creative Explorer | Building robust systems and crafting elegant solutions",
   sections = defaultSections,
   socialLinks = {
-    twitter: "https://twitter.com",
-    linkedin: "https://linkedin.com",
     github: "https://github.com",
-    email: "hello@auralink.com",
+    linkedin: "https://linkedin.com",
+    email: "hello@aton.dev",
   },
   copyrightText,
 }: FooterProps) => {
@@ -86,7 +62,7 @@ export const Footer = ({
     <footer className="w-full bg-[#fafafa] border-t border-[#e5e5e5]">
       <div className="max-w-[1200px] mx-auto px-8 py-16">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand Column */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -109,13 +85,13 @@ export const Footer = ({
 
             {/* Social Links */}
             <div className="flex items-center gap-3 mt-6">
-              {socialLinks.twitter && (
+              {socialLinks.github && (
                 <a
-                  href={socialLinks.twitter}
+                  href={socialLinks.github}
                   className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
-                  aria-label="Twitter"
+                  aria-label="GitHub"
                 >
-                  <Twitter className="w-4 h-4" />
+                  <Github className="w-4 h-4" />
                 </a>
               )}
               {socialLinks.linkedin && (
@@ -125,15 +101,6 @@ export const Footer = ({
                   aria-label="LinkedIn"
                 >
                   <Linkedin className="w-4 h-4" />
-                </a>
-              )}
-              {socialLinks.github && (
-                <a
-                  href={socialLinks.github}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
-                  aria-label="GitHub"
-                >
-                  <Github className="w-4 h-4" />
                 </a>
               )}
               {socialLinks.email && (
@@ -195,18 +162,18 @@ export const Footer = ({
             </p>
             <div className="flex items-center gap-6">
               <a
-                href="#status"
+                href="#projects"
                 className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
                 style={{ fontFamily: "Figtree" }}
               >
-                Status
+                Projects
               </a>
               <a
-                href="#sitemap"
+                href="/tools"
                 className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
                 style={{ fontFamily: "Figtree" }}
               >
-                Sitemap
+                Tools
               </a>
             </div>
           </div>
