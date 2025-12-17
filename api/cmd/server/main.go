@@ -7,11 +7,18 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/joho/godotenv"
+
 	"github.com/aton/atonWeb/api/internal/config"
 	"github.com/aton/atonWeb/api/internal/server"
 )
 
 func main() {
+	// 加载 .env 文件
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
 	cfg := config.Load()
 	srv := server.New(cfg)
 

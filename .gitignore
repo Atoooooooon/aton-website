@@ -1,9 +1,7 @@
 # Project-wide ignores
 
 # Template/demo projects - keep in repo but may want to ignore in future
-auralink-saa-s-landing-page/
-cat-accordion/
-infinite-card-stack/
+components/
 
 # Dependencies
 node_modules/
@@ -92,3 +90,8 @@ api/dist/
 web/node_modules/
 web/.next/
 web/out/
+
+# Test
+test/
+
+# Other
