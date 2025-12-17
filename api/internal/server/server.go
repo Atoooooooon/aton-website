@@ -11,13 +11,13 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/aton/atonWeb/api/internal/auth"
 	"github.com/aton/atonWeb/api/internal/config"
-	"github.com/aton/atonWeb/api/internal/handler"
-	"github.com/aton/atonWeb/api/internal/middleware"
-	"github.com/aton/atonWeb/api/internal/model"
+	"github.com/aton/atonWeb/api/internal/delivery/http/handler"
+	"github.com/aton/atonWeb/api/internal/delivery/http/middleware"
+	"github.com/aton/atonWeb/api/internal/domain"
+	"github.com/aton/atonWeb/api/internal/infrastructure/jwt"
 	"github.com/aton/atonWeb/api/internal/repository"
-	"github.com/aton/atonWeb/api/internal/service"
+	"github.com/aton/atonWeb/api/internal/usecase"
 )
 
 type Server struct {
@@ -35,24 +35,24 @@ func New(cfg config.Config) *Server {
 	}
 
 	// 自动迁移数据库
-	if err := db.AutoMigrate(&model.Photo{}, &model.User{}); err != nil {
+	if err := db.AutoMigrate(&domain.Photo{}, &domain.User{}); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
 	// 初始化 JWT Manager
-	jwtManager := auth.NewJWTManager(cfg.JWTSecret, 24*time.Hour)
+	jwtManager := jwt.NewJWTManager(cfg.JWTSecret, 24*time.Hour)
 
 	// 初始化认证服务
-	authService := service.NewAuthService(db, jwtManager)
+	authService := usecase.NewAuthService(db, jwtManager)
 	authHandler := handler.NewAuthHandler(authService)
 
 	// 初始化分层架构
 	photoRepo := repository.NewPhotoRepository(db)
-	photoService := service.NewPhotoService(photoRepo)
+	photoService := usecase.NewPhotoService(photoRepo)
 	photoHandler := handler.NewPhotoHandler(photoService)
 
 	// 初始化存储服务
-	storageService, err := service.NewStorageService(cfg)
+	storageService, err := usecase.NewStorageService(cfg)
 	if err != nil {
 		log.Printf("Warning: Storage service not available: %v", err)
 	}

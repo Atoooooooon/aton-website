@@ -3,14 +3,14 @@ package repository
 import (
 	"gorm.io/gorm"
 
-	"github.com/aton/atonWeb/api/internal/model"
+	"github.com/aton/atonWeb/api/internal/domain"
 )
 
 type PhotoRepository interface {
-	Create(photo *model.Photo) error
-	GetByID(id uint) (*model.Photo, error)
-	List(filters PhotoFilters) ([]model.Photo, int64, error)
-	Update(photo *model.Photo) error
+	Create(photo *domain.Photo) error
+	GetByID(id uint) (*domain.Photo, error)
+	List(filters PhotoFilters) ([]domain.Photo, int64, error)
+	Update(photo *domain.Photo) error
 	Delete(id uint) error
 	UpdateDisplayOrder(id uint, order int) error
 	BatchUpdateDisplayOrder(orders []DisplayOrderUpdate) error
@@ -38,12 +38,12 @@ func NewPhotoRepository(db *gorm.DB) PhotoRepository {
 	return &photoRepo{db: db}
 }
 
-func (r *photoRepo) Create(photo *model.Photo) error {
+func (r *photoRepo) Create(photo *domain.Photo) error {
 	return r.db.Create(photo).Error
 }
 
-func (r *photoRepo) GetByID(id uint) (*model.Photo, error) {
-	var photo model.Photo
+func (r *photoRepo) GetByID(id uint) (*domain.Photo, error) {
+	var photo domain.Photo
 	err := r.db.First(&photo, id).Error
 	if err != nil {
 		return nil, err
@@ -51,11 +51,11 @@ func (r *photoRepo) GetByID(id uint) (*model.Photo, error) {
 	return &photo, nil
 }
 
-func (r *photoRepo) List(filters PhotoFilters) ([]model.Photo, int64, error) {
-	var photos []model.Photo
+func (r *photoRepo) List(filters PhotoFilters) ([]domain.Photo, int64, error) {
+	var photos []domain.Photo
 	var total int64
 
-	query := r.db.Model(&model.Photo{})
+	query := r.db.Model(&domain.Photo{})
 
 	// Apply filters
 	if filters.Status != "" {
@@ -92,22 +92,22 @@ func (r *photoRepo) List(filters PhotoFilters) ([]model.Photo, int64, error) {
 	return photos, total, err
 }
 
-func (r *photoRepo) Update(photo *model.Photo) error {
+func (r *photoRepo) Update(photo *domain.Photo) error {
 	return r.db.Save(photo).Error
 }
 
 func (r *photoRepo) Delete(id uint) error {
-	return r.db.Delete(&model.Photo{}, id).Error
+	return r.db.Delete(&domain.Photo{}, id).Error
 }
 
 func (r *photoRepo) UpdateDisplayOrder(id uint, order int) error {
-	return r.db.Model(&model.Photo{}).Where("id = ?", id).Update("display_order", order).Error
+	return r.db.Model(&domain.Photo{}).Where("id = ?", id).Update("display_order", order).Error
 }
 
 func (r *photoRepo) BatchUpdateDisplayOrder(orders []DisplayOrderUpdate) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		for _, update := range orders {
-			if err := tx.Model(&model.Photo{}).Where("id = ?", update.ID).Update("display_order", update.Order).Error; err != nil {
+			if err := tx.Model(&domain.Photo{}).Where("id = ?", update.ID).Update("display_order", update.Order).Error; err != nil {
 				return err
 			}
 		}
