@@ -1,6 +1,9 @@
 "use client"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { ArrowUpRight } from "lucide-react"
+import { useComponentPhotos } from "@/lib/hooks/useComponentPhotos"
+
 type ProductTeaserCardProps = {
   dailyVolume?: string
   dailyVolumeLabel?: string
@@ -30,6 +33,18 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
     secondaryButtonText = "Explore Tools",
     secondaryButtonHref = "/tools",
   } = props
+
+  // Fetch ProductTeaserCard photos using custom hook
+  const { photos } = useComponentPhotos("ProductTeaserCard")
+  const [bgImage, setBgImage] = useState<string>(
+    "https://storage.googleapis.com/storage.magicpath.ai/user/282171029206482944/assets/882ef3dd-3459-4fd8-a939-52ceada51d5c.png"
+  )
+
+  useEffect(() => {
+    if (photos.length > 0) {
+      setBgImage(photos[0].photo.imageUrl)
+    }
+  }, [photos])
 
   // @return
   return (
@@ -159,8 +174,7 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
             }}
             className="col-span-12 lg:col-span-6 bg-white rounded-[40px] flex justify-center items-center aspect-square overflow-hidden"
             style={{
-              backgroundImage:
-                "url(https://storage.googleapis.com/storage.magicpath.ai/user/282171029206482944/assets/882ef3dd-3459-4fd8-a939-52ceada51d5c.png)",
+              backgroundImage: `url(${bgImage})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",

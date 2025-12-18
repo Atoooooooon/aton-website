@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useComponentPhotos } from "@/lib/hooks/useComponentPhotos"
 
 interface OptionData {
   id: number
@@ -14,8 +15,7 @@ interface OptionData {
 
 const OptionsSelector: React.FC = () => {
   const [activeOption, setActiveOption] = useState<number>(0)
-
-  const optionsData: OptionData[] = [
+  const [optionsData, setOptionsData] = useState<OptionData[]>([
     {
       id: 0,
       background: "/tabby-cat.png",
@@ -56,7 +56,24 @@ const OptionsSelector: React.FC = () => {
       sub: "exploring the universe",
       defaultColor: "#5D9CEC",
     },
-  ]
+  ])
+
+  // Load photos using custom hook
+  const { photos } = useComponentPhotos("CatAccordion")
+
+  useEffect(() => {
+    if (photos.length > 0) {
+      const newOptions = photos.slice(0, 5).map((item, index) => ({
+        id: index,
+        background: item.photo.imageUrl,
+        icon: optionsData[index]?.icon || "fas fa-image",
+        main: item.props.caption || item.photo.title,
+        sub: item.props.alt || "Photo",
+        defaultColor: optionsData[index]?.defaultColor || "#ED5565",
+      }))
+      setOptionsData(newOptions)
+    }
+  }, [photos])
 
   const handleOptionClick = (optionId: number) => {
     setActiveOption(optionId)

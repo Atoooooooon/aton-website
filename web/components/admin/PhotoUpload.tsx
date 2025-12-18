@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Upload } from "lucide-react";
+import { useToast } from "@/components/ui/ToastProvider";
 
 interface PhotoUploadProps {
   onUploadSuccess: () => void;
 }
 
 export function PhotoUpload({ onUploadSuccess }: PhotoUploadProps) {
+  const { showToast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -37,7 +39,7 @@ export function PhotoUpload({ onUploadSuccess }: PhotoUploadProps) {
     const file = fileInput.files?.[0];
 
     if (!file) {
-      alert("Please select an image");
+      showToast("Please select an image", "warning");
       return;
     }
 
@@ -98,7 +100,7 @@ export function PhotoUpload({ onUploadSuccess }: PhotoUploadProps) {
         throw new Error("Failed to save photo record");
       }
 
-      alert("Upload successful!");
+      showToast("Photo uploaded successfully!", "success");
       setPreview(null);
       setFormData({
         title: "",
@@ -111,7 +113,7 @@ export function PhotoUpload({ onUploadSuccess }: PhotoUploadProps) {
       onUploadSuccess();
     } catch (error) {
       console.error("Upload error:", error);
-      alert(`Upload failed: ${error}`);
+      showToast(`Upload failed: ${error}`, "error");
     } finally {
       setUploading(false);
     }

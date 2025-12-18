@@ -35,7 +35,7 @@ func New(cfg config.Config) *Server {
 	}
 
 	// 自动迁移数据库
-	if err := db.AutoMigrate(&domain.Photo{}, &domain.User{}); err != nil {
+	if err := db.AutoMigrate(&domain.Photo{}, &domain.User{}, &domain.ComponentPhoto{}); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
@@ -50,6 +50,11 @@ func New(cfg config.Config) *Server {
 	photoRepo := repository.NewPhotoRepository(db)
 	photoService := usecase.NewPhotoService(photoRepo)
 	photoHandler := handler.NewPhotoHandler(photoService)
+
+	// 初始化组件照片服务
+	componentPhotoRepo := repository.NewComponentPhotoRepository(db)
+	componentPhotoService := usecase.NewComponentPhotoService(componentPhotoRepo)
+	componentPhotoHandler := handler.NewComponentPhotoHandler(componentPhotoService)
 
 	// 初始化存储服务
 	storageService, err := usecase.NewStorageService(cfg)
@@ -116,6 +121,23 @@ func New(cfg config.Config) *Server {
 			photos.PUT("/:id", photoHandler.Update)
 			photos.DELETE("/:id", photoHandler.Delete)
 			photos.POST("/reorder", photoHandler.BatchUpdateDisplayOrder)
+			// Get component assignments for a photo
+			photos.GET("/:id/components", componentPhotoHandler.GetComponentsByPhoto)
+		}
+
+		// Component Photos 路由 (需要认证)
+		componentPhotos := v1.Group("/component-photos")
+		componentPhotos.Use(authMiddleware)
+		{
+			componentPhotos.POST("", componentPhotoHandler.AssignPhotoToComponent)
+			componentPhotos.PUT("/:id", componentPhotoHandler.UpdateComponentPhoto)
+			componentPhotos.DELETE("/:id", componentPhotoHandler.RemovePhotoFromComponent)
+		}
+
+		// Components 路由 (public for photo fetching, auth for admin)
+		components := v1.Group("/components")
+		{
+			components.GET("/:name/photos", componentPhotoHandler.GetPhotosByComponent)
 		}
 
 		// Storage 路由 (需要认证)

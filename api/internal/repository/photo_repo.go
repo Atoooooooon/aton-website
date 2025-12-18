@@ -97,7 +97,14 @@ func (r *photoRepo) Update(photo *domain.Photo) error {
 }
 
 func (r *photoRepo) Delete(id uint) error {
-	return r.db.Delete(&domain.Photo{}, id).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// First delete all component_photos associations
+		if err := tx.Where("photo_id = ?", id).Delete(&domain.ComponentPhoto{}).Error; err != nil {
+			return err
+		}
+		// Then delete the photo
+		return tx.Delete(&domain.Photo{}, id).Error
+	})
 }
 
 func (r *photoRepo) UpdateDisplayOrder(id uint, order int) error {

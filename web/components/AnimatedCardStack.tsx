@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useComponentPhotos } from "@/lib/hooks/useComponentPhotos"
 
 interface Card {
   id: number
   contentType: 1 | 2 | 3
 }
 
-const cardData = {
+interface CardData {
+  title: string
+  description: string
+  image: string
+}
+
+const defaultCardData: Record<number, CardData> = {
   1: {
     title: "Dithered Flowers",
     description: "Digital Nostalgia",
@@ -51,7 +58,7 @@ const enterAnimation = {
   opacity: 0,
 }
 
-function CardContent({ contentType }: { contentType: 1 | 2 | 3 }) {
+function CardContent({ contentType, cardData }: { contentType: 1 | 2 | 3; cardData: Record<number, CardData> }) {
   const data = cardData[contentType]
 
   return (
@@ -91,10 +98,12 @@ function AnimatedCard({
   card,
   index,
   isAnimating,
+  cardData,
 }: {
   card: Card
   index: number
   isAnimating: boolean
+  cardData: Record<number, CardData>
 }) {
   const { scale, y } = positionStyles[index] ?? positionStyles[2]
   const zIndex = index === 0 && isAnimating ? 10 : 3 - index
@@ -122,7 +131,7 @@ function AnimatedCard({
       }}
       className="absolute flex h-[360px] w-[420px] items-center justify-center overflow-hidden rounded-t-xl border-x border-t border-border bg-card p-1 shadow-lg will-change-transform sm:w-[680px]"
     >
-      <CardContent contentType={card.contentType} />
+      <CardContent contentType={card.contentType} cardData={cardData} />
     </motion.div>
   )
 }
@@ -132,6 +141,24 @@ export default function AnimatedCardStack() {
   const [isAnimating, setIsAnimating] = useState(false)
   const [nextId, setNextId] = useState(4)
   const [isPlaying, setIsPlaying] = useState(true)
+  const [cardData, setCardData] = useState<Record<number, CardData>>(defaultCardData)
+
+  // Load photos using custom hook
+  const { photos } = useComponentPhotos("AnimatedCardStack")
+
+  useEffect(() => {
+    if (photos.length > 0) {
+      const apiCardData: Record<number, CardData> = {}
+      photos.slice(0, 3).forEach((item, index) => {
+        apiCardData[index + 1] = {
+          title: item.props.caption || item.photo.title,
+          description: item.props.alt || "Photo",
+          image: item.photo.imageUrl,
+        }
+      })
+      setCardData({ ...defaultCardData, ...apiCardData })
+    }
+  }, [photos])
 
   const handleAnimate = () => {
     setIsAnimating(true)
@@ -159,7 +186,7 @@ export default function AnimatedCardStack() {
       <div className="relative h-[500px] w-full overflow-hidden sm:w-[800px]">
         <AnimatePresence initial={false}>
           {cards.slice(0, 3).map((card, index) => (
-            <AnimatedCard key={card.id} card={card} index={index} isAnimating={isAnimating} />
+            <AnimatedCard key={card.id} card={card} index={index} isAnimating={isAnimating} cardData={cardData} />
           ))}
         </AnimatePresence>
       </div>

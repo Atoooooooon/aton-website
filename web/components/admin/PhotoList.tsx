@@ -1,6 +1,10 @@
 "use client";
 
-import { Trash2, Star } from "lucide-react";
+import { useState } from "react";
+import { Trash2, Star, Grid } from "lucide-react";
+import { ComponentAssignModal } from "./ComponentAssignModal";
+import { useToast } from "@/components/ui/ToastProvider";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface Photo {
   id: number;
@@ -20,14 +24,28 @@ interface PhotoListProps {
 }
 
 export function PhotoList({ photos, onUpdate }: PhotoListProps) {
+  const { showToast } = useToast();
+  const [assignModal, setAssignModal] = useState<{
+    isOpen: boolean;
+    photoId: number;
+    photoTitle: string;
+  }>({ isOpen: false, photoId: 0, photoTitle: "" });
+
+  // Confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this photo?")) {
-      return;
-    }
+    setDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:8080/api/v1/photos/${id}`, {
+      const res = await fetch(`http://localhost:8080/api/v1/photos/${deleteId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -38,11 +56,14 @@ export function PhotoList({ photos, onUpdate }: PhotoListProps) {
         throw new Error("Delete failed");
       }
 
-      alert("Deleted successfully!");
+      showToast("Photo deleted successfully", "success");
       onUpdate();
     } catch (error) {
       console.error("Delete error:", error);
-      alert(`Delete failed: ${error}`);
+      showToast(`Delete failed: ${error}`, "error");
+    } finally {
+      setConfirmOpen(false);
+      setDeleteId(null);
     }
   };
 
@@ -64,10 +85,11 @@ export function PhotoList({ photos, onUpdate }: PhotoListProps) {
         throw new Error("Update failed");
       }
 
+      showToast(`Photo ${newStatus === "published" ? "published" : "unpublished"} successfully`, "success");
       onUpdate();
     } catch (error) {
       console.error("Update error:", error);
-      alert(`Update failed: ${error}`);
+      showToast(`Update failed: ${error}`, "error");
     }
   };
 
@@ -82,7 +104,22 @@ export function PhotoList({ photos, onUpdate }: PhotoListProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
+    <>
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title="Delete Photo"
+        message="Are you sure you want to delete this photo? This will also remove all component assignments. This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setConfirmOpen(false);
+          setDeleteId(null);
+        }}
+      />
+
+      <div className="bg-white rounded-lg border border-gray-200">
       <div className="p-6">
         <h2 className="text-lg font-semibold mb-4 text-gray-900">
           Photo Gallery
@@ -131,6 +168,20 @@ export function PhotoList({ photos, onUpdate }: PhotoListProps) {
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     <button
+                      onClick={() =>
+                        setAssignModal({
+                          isOpen: true,
+                          photoId: photo.id,
+                          photoTitle: photo.title,
+                        })
+                      }
+                      className="px-3 py-1 text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors flex items-center gap-1.5"
+                      title="Assign to Components"
+                    >
+                      <Grid className="w-3.5 h-3.5" />
+                      Assign
+                    </button>
+                    <button
                       onClick={() => handlePublish(photo.id, photo.status)}
                       className={`px-3 py-1 text-sm rounded-lg ${
                         photo.status === "published"
@@ -154,6 +205,18 @@ export function PhotoList({ photos, onUpdate }: PhotoListProps) {
           ))}
         </div>
       </div>
+
+      {/* Component Assign Modal */}
+      <ComponentAssignModal
+        photoId={assignModal.photoId}
+        photoTitle={assignModal.photoTitle}
+        isOpen={assignModal.isOpen}
+        onClose={() =>
+          setAssignModal({ isOpen: false, photoId: 0, photoTitle: "" })
+        }
+        onSuccess={onUpdate}
+      />
     </div>
+    </>
   );
 }
