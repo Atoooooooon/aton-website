@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PhotoUpload } from "@/components/admin/PhotoUpload";
 import { PhotoList } from "@/components/admin/PhotoList";
+import { ArrowLeft } from "lucide-react";
 
 export default function PhotoManagementPage() {
   const router = useRouter();
@@ -37,17 +38,19 @@ export default function PhotoManagementPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    router.push("/admin/login");
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with mint green accent */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => router.push("/admin")}
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1.5 -ml-1 self-start"
+            >
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </button>
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">
                 Photo Management
@@ -56,12 +59,6 @@ export default function PhotoManagementPage() {
                 Upload and manage your photography collection
               </p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              Sign Out
-            </button>
           </div>
         </div>
       </header>

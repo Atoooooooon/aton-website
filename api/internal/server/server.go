@@ -99,6 +99,13 @@ func New(cfg config.Config) *Server {
 		// 需要认证的路由
 		authMiddleware := middleware.AuthMiddleware(jwtManager)
 
+		// User 路由 (需要认证)
+		user := v1.Group("/user")
+		user.Use(authMiddleware)
+		{
+			user.POST("/change-password", authHandler.ChangePassword)
+		}
+
 		// Photos 路由 (需要认证)
 		photos := v1.Group("/photos")
 		photos.Use(authMiddleware)

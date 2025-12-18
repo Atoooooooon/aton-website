@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 const navigationLinks = [
   {
     name: "Home",
@@ -27,6 +28,7 @@ const navigationLinks = [
 export const PortfolioNavbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const router = useRouter()
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
@@ -65,6 +67,7 @@ export const PortfolioNavbar = () => {
           <div className="flex-shrink-0">
             <button
               onClick={() => handleLinkClick("#home")}
+              onDoubleClick={() => router.push("/admin")}
               className="text-2xl font-bold text-foreground hover:text-primary transition-colors duration-200"
               style={{
                 fontFamily: "Plus Jakarta Sans, sans-serif",

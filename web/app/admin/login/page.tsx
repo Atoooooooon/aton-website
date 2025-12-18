@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import * as authAPI from "@/lib/api/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,21 +17,11 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Invalid credentials");
-      }
-
-      const data = await res.json();
+      const data = await authAPI.login(username, password);
       localStorage.setItem("token", data.token);
       router.push("/admin/photos");
-    } catch (err) {
-      setError("Invalid username or password");
+    } catch (err: any) {
+      setError(err.message || "Invalid username or password");
     } finally {
       setLoading(false);
     }

@@ -12,11 +12,14 @@ import (
 var (
 	ErrInvalidCredentials = errors.New("invalid username or password")
 	ErrUserExists         = errors.New("user already exists")
+	ErrHashFailed		  = errors.New("failed to hash password")
+	ErrUpdatePassword	  = errors.New("failed to update password")
 )
 
 type AuthService interface {
 	Login(username, password string) (string, error)
 	CreateUser(username, password, email string) (*domain.User, error)
+	ChangePasswordByUserID(userID uint, oldPassword, newPassword string) (*domain.User, error)
 }
 
 type authService struct {
@@ -73,4 +76,29 @@ func (s *authService) CreateUser(username, password, email string) (*domain.User
 	}
 
 	return user, nil
+}
+
+
+func (s *authService) ChangePasswordByUserID(userID uint, oldPassword, newPassword string) (*domain.User, error) {
+	var currentUser domain.User
+	if err := s.db.First(&currentUser, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrInvalidCredentials
+		}
+		return nil, err
+	}
+
+	if !currentUser.CheckPassword(oldPassword) {
+		return nil, ErrInvalidCredentials
+	}
+
+	if err := currentUser.HashPassword(newPassword); err != nil {
+		return nil, ErrHashFailed
+	}
+
+	if err := s.db.Model(&currentUser).Update("password", currentUser.Password).Error; err != nil {
+		return nil, ErrUpdatePassword
+	}
+
+	return &currentUser, nil
 }
