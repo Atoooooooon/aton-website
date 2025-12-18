@@ -70,9 +70,12 @@ const generateDataPoints = (): DataPoint[] => {
 // @component: BankingScaleHero
 export const BankingScaleHero = () => {
   const [isVisible, setIsVisible] = useState(false)
-  const [dataPoints] = useState<DataPoint[]>(generateDataPoints())
+  const [dataPoints, setDataPoints] = useState<DataPoint[]>([])
   const [typingComplete, setTypingComplete] = useState(false)
+
   useEffect(() => {
+    // 只在客户端生成数据点,避免 hydration 不匹配
+    setDataPoints(generateDataPoints())
     setIsVisible(true)
     const timer = setTimeout(() => setTypingComplete(true), 1000)
     return () => clearTimeout(timer)
