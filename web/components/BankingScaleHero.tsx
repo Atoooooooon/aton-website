@@ -38,14 +38,23 @@ const stats: StatItem[] = [
     delay: 0.6,
   },
 ]
+// 使用固定种子的伪随机数生成器,确保 SSR 和客户端一致
+const seededRandom = (seed: number) => {
+  const x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
+
 const generateDataPoints = (): DataPoint[] => {
   const points: DataPoint[] = []
   const baseLeft = 1
   const spacing = 32
   for (let i = 0; i < 50; i++) {
     const direction = i % 2 === 0 ? "down" : "up"
-    const height = Math.floor(Math.random() * 120) + 88
-    const top = direction === "down" ? Math.random() * 150 + 250 : Math.random() * 100 - 80
+    // 使用固定种子,确保每次生成相同的随机数
+    const height = Math.floor(seededRandom(i * 100) * 120) + 88
+    const top = direction === "down"
+      ? seededRandom(i * 100 + 1) * 150 + 250
+      : seededRandom(i * 100 + 2) * 100 - 80
     points.push({
       id: i,
       left: baseLeft + i * spacing,
