@@ -8,6 +8,7 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/admin/login");
@@ -15,7 +16,9 @@ export default function AdminDashboard() {
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+    }
     router.push("/admin/login");
   };
 

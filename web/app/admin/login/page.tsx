@@ -18,7 +18,9 @@ export default function LoginPage() {
 
     try {
       const data = await authAPI.login(username, password);
-      localStorage.setItem("token", data.token);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", data.token);
+      }
       router.push("/admin/photos");
     } catch (err: any) {
       setError(err.message || "Invalid username or password");

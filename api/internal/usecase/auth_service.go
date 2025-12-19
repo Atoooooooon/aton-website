@@ -5,15 +5,14 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/aton/atonWeb/api/internal/infrastructure/jwt"
 	"github.com/aton/atonWeb/api/internal/domain"
+	"github.com/aton/atonWeb/api/internal/infrastructure/jwt"
+	"github.com/aton/atonWeb/api/internal/pkg/apperror"
 )
 
 var (
 	ErrInvalidCredentials = errors.New("invalid username or password")
 	ErrUserExists         = errors.New("user already exists")
-	ErrHashFailed		  = errors.New("failed to hash password")
-	ErrUpdatePassword	  = errors.New("failed to update password")
 )
 
 type AuthService interface {
@@ -38,18 +37,18 @@ func (s *authService) Login(username, password string) (string, error) {
 	var user domain.User
 	if err := s.db.Where("username = ?", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", ErrInvalidCredentials
+			return "", apperror.Unauthorized(ErrInvalidCredentials)
 		}
-		return "", err
+		return "", apperror.InternalError(err)
 	}
 
 	if !user.CheckPassword(password) {
-		return "", ErrInvalidCredentials
+		return "", apperror.Unauthorized(ErrInvalidCredentials)
 	}
 
 	token, err := s.jwtManager.GenerateToken(user.ID, user.Username, user.Role)
 	if err != nil {
-		return "", err
+		return "", apperror.InternalError(err)
 	}
 
 	return token, nil
@@ -58,7 +57,7 @@ func (s *authService) Login(username, password string) (string, error) {
 func (s *authService) CreateUser(username, password, email string) (*domain.User, error) {
 	var existingUser domain.User
 	if err := s.db.Where("username = ?", username).First(&existingUser).Error; err == nil {
-		return nil, ErrUserExists
+		return nil, apperror.Conflict(ErrUserExists)
 	}
 
 	user := &domain.User{
@@ -68,36 +67,35 @@ func (s *authService) CreateUser(username, password, email string) (*domain.User
 	}
 
 	if err := user.HashPassword(password); err != nil {
-		return nil, err
+		return nil, apperror.InternalError(err)
 	}
 
 	if err := s.db.Create(user).Error; err != nil {
-		return nil, err
+		return nil, apperror.InternalError(err)
 	}
 
 	return user, nil
 }
 
-
 func (s *authService) ChangePasswordByUserID(userID uint, oldPassword, newPassword string) (*domain.User, error) {
 	var currentUser domain.User
 	if err := s.db.First(&currentUser, userID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrInvalidCredentials
+			return nil, apperror.NotFound(ErrInvalidCredentials)
 		}
-		return nil, err
+		return nil, apperror.InternalError(err)
 	}
 
 	if !currentUser.CheckPassword(oldPassword) {
-		return nil, ErrInvalidCredentials
+		return nil, apperror.Unauthorized(ErrInvalidCredentials)
 	}
 
 	if err := currentUser.HashPassword(newPassword); err != nil {
-		return nil, ErrHashFailed
+		return nil, apperror.InternalError(err)
 	}
 
 	if err := s.db.Model(&currentUser).Update("password", currentUser.Password).Error; err != nil {
-		return nil, ErrUpdatePassword
+		return nil, apperror.InternalError(err)
 	}
 
 	return &currentUser, nil

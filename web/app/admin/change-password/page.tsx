@@ -44,6 +44,8 @@ export default function ChangePasswordPage() {
     }
 
     try {
+      if (typeof window === "undefined") return;
+
       const token = localStorage.getItem("token");
       if (!token) {
         router.push("/admin/login");

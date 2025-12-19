@@ -6,16 +6,17 @@ import { PhotoUpload } from "@/components/admin/PhotoUpload";
 import { PhotoList } from "@/components/admin/PhotoList";
 import { ArrowLeft } from "lucide-react";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { apiClient, API_ENDPOINTS } from "@/lib/api/client";
+import type { Photo } from "@/lib/types/photo";
 
 export default function PhotoManagementPage() {
   const router = useRouter();
-  const [photos, setPhotos] = useState([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Check authentication
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!apiClient.isAuthenticated()) {
       router.push("/admin/login");
       return;
     }
@@ -24,13 +25,10 @@ export default function PhotoManagementPage() {
 
   const loadPhotos = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8080/api/v1/photos", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
+      const data = await apiClient.get<{ data: Photo[] }>(
+        API_ENDPOINTS.photos
+        // requireAuth = true (默认)
+      );
       setPhotos(data.data || []);
     } catch (error) {
       console.error("Failed to load photos:", error);

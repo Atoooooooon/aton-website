@@ -3,58 +3,37 @@ package response
 import (
 	"net/http"
 
+	"github.com/aton/atonWeb/api/internal/pkg/apperror"
 	"github.com/gin-gonic/gin"
 )
 
-// Response 统一响应结构
-type Response struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
-// Success 成功响应
+// Success sends a successful JSON response with data
 func Success(c *gin.Context, data interface{}) {
-	c.JSON(http.StatusOK, Response{
-		Code:    http.StatusOK,
-		Message: "success",
-		Data:    data,
-	})
+	c.JSON(http.StatusOK, data)
 }
 
-// Created 创建成功响应
+// Created sends a 201 Created response
 func Created(c *gin.Context, data interface{}) {
-	c.JSON(http.StatusCreated, Response{
-		Code:    http.StatusCreated,
-		Message: "created",
-		Data:    data,
-	})
+	c.JSON(http.StatusCreated, data)
 }
 
-// Error 错误响应
-func Error(c *gin.Context, code int, message string) {
-	c.JSON(code, Response{
-		Code:    code,
-		Message: message,
-	})
+// Message sends a simple message response
+func Message(c *gin.Context, statusCode int, message string) {
+	c.JSON(statusCode, gin.H{"message": message})
 }
 
-// BadRequest 400 错误
-func BadRequest(c *gin.Context, message string) {
-	Error(c, http.StatusBadRequest, message)
-}
+// Error automatically handles error responses based on error type
+// If error is AppError, use its status code; otherwise return 500
+func Error(c *gin.Context, err error) {
+	if err == nil {
+		return
+	}
 
-// Unauthorized 401 错误
-func Unauthorized(c *gin.Context, message string) {
-	Error(c, http.StatusUnauthorized, message)
-}
+	if appErr, ok := apperror.IsAppError(err); ok {
+		c.JSON(appErr.StatusCode, gin.H{"error": appErr.Error()})
+		return
+	}
 
-// NotFound 404 错误
-func NotFound(c *gin.Context, message string) {
-	Error(c, http.StatusNotFound, message)
-}
-
-// InternalError 500 错误
-func InternalError(c *gin.Context, message string) {
-	Error(c, http.StatusInternalServerError, message)
+	// Unknown error - return 500 with generic message
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 }

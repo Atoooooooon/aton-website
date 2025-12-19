@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/aton/atonWeb/api/internal/domain"
+	"github.com/aton/atonWeb/api/internal/pkg/response"
 	"github.com/aton/atonWeb/api/internal/repository"
 	"github.com/aton/atonWeb/api/internal/usecase"
 )
@@ -48,11 +49,11 @@ func (h *PhotoHandler) List(c *gin.Context) {
 
 	photos, total, err := h.service.List(filters)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response.Success(c, gin.H{
 		"data":  photos,
 		"total": total,
 	})
@@ -68,15 +69,11 @@ func (h *PhotoHandler) GetByID(c *gin.Context) {
 
 	photo, err := h.service.GetByID(uint(id))
 	if err != nil {
-		if err == usecase.ErrPhotoNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Photo not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, photo)
+	response.Success(c, photo)
 }
 
 // Create creates a new photo
@@ -89,15 +86,11 @@ func (h *PhotoHandler) Create(c *gin.Context) {
 
 	photo, err := h.service.Create(&req)
 	if err != nil {
-		if err == usecase.ErrPhotoTitleEmpty || err == usecase.ErrPhotoImageURLEmpty {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, photo)
+	response.Created(c, photo)
 }
 
 // Update updates an existing photo
@@ -116,19 +109,11 @@ func (h *PhotoHandler) Update(c *gin.Context) {
 
 	photo, err := h.service.Update(uint(id), &req)
 	if err != nil {
-		if err == usecase.ErrPhotoNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Photo not found"})
-			return
-		}
-		if err == usecase.ErrPhotoTitleEmpty || err == usecase.ErrPhotoImageURLEmpty {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, photo)
+	response.Success(c, photo)
 }
 
 // Delete deletes a photo
@@ -140,15 +125,11 @@ func (h *PhotoHandler) Delete(c *gin.Context) {
 	}
 
 	if err := h.service.Delete(uint(id)); err != nil {
-		if err == usecase.ErrPhotoNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Photo not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Photo deleted successfully"})
+	response.Message(c, http.StatusOK, "Photo deleted successfully")
 }
 
 // BatchUpdateDisplayOrder updates display order for multiple photos
@@ -163,9 +144,36 @@ func (h *PhotoHandler) BatchUpdateDisplayOrder(c *gin.Context) {
 	}
 
 	if err := h.service.BatchUpdateDisplayOrder(req.Updates); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Display order updated successfully"})
+	response.Message(c, http.StatusOK, "Display order updated successfully")
+}
+
+// ListPublished returns only published photos, ordered by displayOrder
+// This is a public endpoint that doesn't require authentication
+func (h *PhotoHandler) ListPublished(c *gin.Context) {
+	filters := repository.PhotoFilters{
+		Status:  "published",
+		OrderBy: "display_order ASC",
+	}
+
+	// Optional featured filter
+	if featured := c.Query("featured"); featured != "" {
+		if f, err := strconv.ParseBool(featured); err == nil {
+			filters.IsFeatured = &f
+		}
+	}
+
+	photos, total, err := h.service.List(filters)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"data":  photos,
+		"total": total,
+	})
 }

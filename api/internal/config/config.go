@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -11,6 +12,9 @@ type Config struct {
 	AppPort     string
 	PostgresDSN string
 	JWTSecret   string
+
+	// CORS 配置
+	CORSOrigins []string
 
 	// MinIO/OSS 配置
 	OSSEndpoint        string
@@ -27,6 +31,7 @@ func Load() Config {
 		AppPort:            getEnv("API_PORT", "8080"),
 		PostgresDSN:        buildPostgresDSN(),
 		JWTSecret:          getEnv("JWT_SECRET", "change-me-in-production"),
+		CORSOrigins:        parseCORSOrigins(getEnv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")),
 		OSSEndpoint:        getEnv("OSS_ENDPOINT", ""),
 		OSSBucket:          getEnv("OSS_BUCKET", ""),
 		OSSAccessKeyID:     getEnv("OSS_ACCESS_KEY_ID", ""),
@@ -54,4 +59,19 @@ func buildPostgresDSN() string {
 	dbName := getEnv("POSTGRES_DB", "atonweb")
 	sslMode := getEnv("POSTGRES_SSL_MODE", "disable")
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbName, sslMode)
+}
+
+func parseCORSOrigins(originsStr string) []string {
+	if originsStr == "" {
+		return []string{}
+	}
+	origins := strings.Split(originsStr, ",")
+	result := make([]string, 0, len(origins))
+	for _, origin := range origins {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }

@@ -5,14 +5,15 @@ import (
 	"strings"
 
 	"github.com/aton/atonWeb/api/internal/domain"
+	"github.com/aton/atonWeb/api/internal/pkg/apperror"
 	"github.com/aton/atonWeb/api/internal/repository"
 )
 
 var (
-	ErrPhotoNotFound     = errors.New("photo not found")
-	ErrInvalidInput      = errors.New("invalid input")
-	ErrPhotoTitleEmpty   = errors.New("photo title cannot be empty")
+	ErrPhotoNotFound      = errors.New("photo not found")
+	ErrPhotoTitleEmpty    = errors.New("photo title cannot be empty")
 	ErrPhotoImageURLEmpty = errors.New("photo image URL cannot be empty")
+	ErrNoFieldsToUpdate   = errors.New("no fields to update")
 )
 
 type PhotoService interface {
@@ -34,24 +35,27 @@ func NewPhotoService(repo repository.PhotoRepository) PhotoService {
 }
 
 func (s *photoService) Create(req *domain.CreatePhotoRequest) (*domain.Photo, error) {
-	// Validate input
-	if err := s.validateCreateRequest(req); err != nil {
-		return nil, err
+	if strings.TrimSpace(req.Title) == "" {
+		return nil, apperror.BadRequest(ErrPhotoTitleEmpty)
+	}
+	if strings.TrimSpace(req.ImageURL) == "" {
+		return nil, apperror.BadRequest(ErrPhotoImageURLEmpty)
 	}
 
 	photo := &domain.Photo{
-		Title:        strings.TrimSpace(req.Title),
-		Description:  strings.TrimSpace(req.Description),
-		ImageURL:     strings.TrimSpace(req.ImageURL),
-		ThumbnailURL: strings.TrimSpace(req.ThumbnailURL),
-		Category:     strings.TrimSpace(req.Category),
-		Location:     strings.TrimSpace(req.Location),
+		Title:        req.Title,
+		Description:  req.Description,
+		ImageURL:     req.ImageURL,
+		ThumbnailURL: req.ThumbnailURL,
+		Category:     req.Category,
+		Location:     req.Location,
 		IsFeatured:   req.IsFeatured,
-		Status:       "draft",
+		DisplayOrder: req.DisplayOrder,
+		Status:       domain.PhotoStatusDraft,
 	}
 
 	if err := s.repo.Create(photo); err != nil {
-		return nil, err
+		return nil, apperror.InternalError(err)
 	}
 
 	return photo, nil
@@ -60,100 +64,96 @@ func (s *photoService) Create(req *domain.CreatePhotoRequest) (*domain.Photo, er
 func (s *photoService) GetByID(id uint) (*domain.Photo, error) {
 	photo, err := s.repo.GetByID(id)
 	if err != nil {
-		return nil, ErrPhotoNotFound
+		return nil, apperror.NotFound(ErrPhotoNotFound)
 	}
 	return photo, nil
 }
 
 func (s *photoService) List(filters repository.PhotoFilters) ([]domain.Photo, int64, error) {
-	return s.repo.List(filters)
+	photos, total, err := s.repo.List(filters)
+	if err != nil {
+		return nil, 0, apperror.InternalError(err)
+	}
+	return photos, total, nil
 }
 
 func (s *photoService) Update(id uint, req *domain.UpdatePhotoRequest) (*domain.Photo, error) {
+	// Check at least one field to update
+	if !req.HasUpdates() {
+		return nil, apperror.BadRequest(ErrNoFieldsToUpdate)
+	}
+
 	// Get existing photo
 	photo, err := s.repo.GetByID(id)
 	if err != nil {
-		return nil, ErrPhotoNotFound
+		return nil, apperror.NotFound(ErrPhotoNotFound)
 	}
 
-	// Validate input
-	if err := s.validateUpdateRequest(req); err != nil {
-		return nil, err
+	// Validate before update
+	if req.Title != nil && strings.TrimSpace(*req.Title) == "" {
+		return nil, apperror.BadRequest(ErrPhotoTitleEmpty)
+	}
+	if req.ImageURL != nil && strings.TrimSpace(*req.ImageURL) == "" {
+		return nil, apperror.BadRequest(ErrPhotoImageURLEmpty)
 	}
 
-	// Update fields
-	if req.Title != nil {
-		photo.Title = strings.TrimSpace(*req.Title)
-	}
-	if req.Description != nil {
-		photo.Description = strings.TrimSpace(*req.Description)
-	}
-	if req.ImageURL != nil {
-		photo.ImageURL = strings.TrimSpace(*req.ImageURL)
-	}
-	if req.ThumbnailURL != nil {
-		photo.ThumbnailURL = strings.TrimSpace(*req.ThumbnailURL)
-	}
-	if req.Category != nil {
-		photo.Category = strings.TrimSpace(*req.Category)
-	}
-	if req.Location != nil {
-		photo.Location = strings.TrimSpace(*req.Location)
-	}
+	// Update fields using helper function
+	updateStringField(&photo.Title, req.Title)
+	updateStringField(&photo.Description, req.Description)
+	updateStringField(&photo.ImageURL, req.ImageURL)
+	updateStringField(&photo.ThumbnailURL, req.ThumbnailURL)
+	updateStringField(&photo.Category, req.Category)
+	updateStringField(&photo.Location, req.Location)
+
 	if req.IsFeatured != nil {
 		photo.IsFeatured = *req.IsFeatured
 	}
+	if req.DisplayOrder != nil {
+		photo.DisplayOrder = *req.DisplayOrder
+	}
 	if req.Status != nil {
-		photo.Status = strings.TrimSpace(*req.Status)
+		photo.Status = *req.Status
 	}
 
 	if err := s.repo.Update(photo); err != nil {
-		return nil, err
+		return nil, apperror.InternalError(err)
 	}
 
 	return photo, nil
 }
 
 func (s *photoService) Delete(id uint) error {
-	// Check if photo exists
-	_, err := s.repo.GetByID(id)
+	// Delete directly and check affected rows
+	err := s.repo.Delete(id)
 	if err != nil {
-		return ErrPhotoNotFound
+		// Check if it's a not found error
+		if err.Error() == "record not found" {
+			return apperror.NotFound(ErrPhotoNotFound)
+		}
+		return apperror.InternalError(err)
 	}
-
-	return s.repo.Delete(id)
+	return nil
 }
 
 func (s *photoService) UpdateDisplayOrder(id uint, order int) error {
-	// Check if photo exists
-	_, err := s.repo.GetByID(id)
+	err := s.repo.UpdateDisplayOrder(id, order)
 	if err != nil {
-		return ErrPhotoNotFound
+		return apperror.InternalError(err)
 	}
-
-	return s.repo.UpdateDisplayOrder(id, order)
+	return nil
 }
 
 func (s *photoService) BatchUpdateDisplayOrder(orders []repository.DisplayOrderUpdate) error {
-	return s.repo.BatchUpdateDisplayOrder(orders)
-}
-
-func (s *photoService) validateCreateRequest(req *domain.CreatePhotoRequest) error {
-	if strings.TrimSpace(req.Title) == "" {
-		return ErrPhotoTitleEmpty
-	}
-	if strings.TrimSpace(req.ImageURL) == "" {
-		return ErrPhotoImageURLEmpty
+	err := s.repo.BatchUpdateDisplayOrder(orders)
+	if err != nil {
+		return apperror.InternalError(err)
 	}
 	return nil
 }
 
-func (s *photoService) validateUpdateRequest(req *domain.UpdatePhotoRequest) error {
-	if req.Title != nil && strings.TrimSpace(*req.Title) == "" {
-		return ErrPhotoTitleEmpty
+// Helper function to update string pointer fields
+func updateStringField(target *string, source *string) {
+	if source != nil {
+		*target = *source
 	}
-	if req.ImageURL != nil && strings.TrimSpace(*req.ImageURL) == "" {
-		return ErrPhotoImageURLEmpty
-	}
-	return nil
 }

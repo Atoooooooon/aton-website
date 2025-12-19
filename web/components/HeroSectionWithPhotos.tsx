@@ -2,22 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-
-interface ComponentPhoto {
-  id: number;
-  photoId: number;
-  order: number;
-  props: {
-    caption?: string;
-    alt?: string;
-    link?: string;
-  };
-  photo: {
-    id: number;
-    imageUrl: string;
-    title: string;
-  };
-}
+import { apiClient, API_ENDPOINTS } from "@/lib/api/client";
+import type { ComponentPhoto } from "@/lib/types/photo";
 
 export function HeroSectionWithPhotos() {
   const [photos, setPhotos] = useState<ComponentPhoto[]>([]);
@@ -29,10 +15,10 @@ export function HeroSectionWithPhotos() {
 
   const loadPhotos = async () => {
     try {
-      const res = await fetch(
-        "http://localhost:8080/api/v1/components/HeroSection/photos"
+      const data = await apiClient.get<{ data: ComponentPhoto[] }>(
+        API_ENDPOINTS.componentPhotosList("HeroSection"),
+        false // 前台不需要 token
       );
-      const data = await res.json();
       setPhotos(data.data || []);
     } catch (error) {
       console.error("Failed to load hero photos:", error);

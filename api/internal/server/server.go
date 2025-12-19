@@ -75,7 +75,7 @@ func New(cfg config.Config) *Server {
 
 	// 配置 CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowOrigins:     cfg.CORSOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -97,8 +97,10 @@ func New(cfg config.Config) *Server {
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/login", authHandler.Login)
-			// Temporary route for creating initial admin user (remove in production)
-			auth.POST("/create-user", authHandler.CreateUser)
+			// Only allow user creation in non-production environments
+			if cfg.Env != "production" {
+				auth.POST("/create-user", authHandler.CreateUser)
+			}
 		}
 
 		// 需要认证的路由
@@ -111,18 +113,24 @@ func New(cfg config.Config) *Server {
 			user.POST("/change-password", authHandler.ChangePassword)
 		}
 
-		// Photos 路由 (需要认证)
+		// Photos 路由
 		photos := v1.Group("/photos")
-		photos.Use(authMiddleware)
 		{
-			photos.GET("", photoHandler.List)
-			photos.POST("", photoHandler.Create)
-			photos.GET("/:id", photoHandler.GetByID)
-			photos.PUT("/:id", photoHandler.Update)
-			photos.DELETE("/:id", photoHandler.Delete)
-			photos.POST("/reorder", photoHandler.BatchUpdateDisplayOrder)
-			// Get component assignments for a photo
-			photos.GET("/:id/components", componentPhotoHandler.GetComponentsByPhoto)
+			// Public routes - no auth required
+			photos.GET("/published", photoHandler.ListPublished) // Public: only published photos for photo wall
+			photos.GET("/:id", photoHandler.GetByID)             // Public: for photo detail
+
+			// Protected routes - require auth (admin only)
+			photosAuth := photos.Group("")
+			photosAuth.Use(authMiddleware)
+			{
+				photosAuth.GET("", photoHandler.List) // Admin: all photos with filters
+				photosAuth.POST("", photoHandler.Create)
+				photosAuth.PUT("/:id", photoHandler.Update)
+				photosAuth.DELETE("/:id", photoHandler.Delete)
+				photosAuth.POST("/reorder", photoHandler.BatchUpdateDisplayOrder)
+				photosAuth.GET("/:id/components", componentPhotoHandler.GetComponentsByPhoto)
+			}
 		}
 
 		// Component Photos 路由 (需要认证)

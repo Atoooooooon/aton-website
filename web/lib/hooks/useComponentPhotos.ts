@@ -1,20 +1,6 @@
 import { useState, useEffect } from "react"
-
-export interface ComponentPhoto {
-  id: number
-  photoId: number
-  order: number
-  props: {
-    caption?: string
-    alt?: string
-    link?: string
-  }
-  photo: {
-    id: number
-    imageUrl: string
-    title: string
-  }
-}
+import { apiClient, API_ENDPOINTS } from "../api/client"
+import type { ComponentPhoto } from "../types/photo"
 
 export function useComponentPhotos(componentName: string) {
   const [photos, setPhotos] = useState<ComponentPhoto[]>([])
@@ -25,10 +11,10 @@ export function useComponentPhotos(componentName: string) {
     const loadPhotos = async () => {
       try {
         setLoading(true)
-        const res = await fetch(
-          `http://localhost:8080/api/v1/components/${componentName}/photos`
+        const data = await apiClient.get<{ data: ComponentPhoto[] }>(
+          API_ENDPOINTS.componentPhotosList(componentName),
+          false // 前台组件不需要 token
         )
-        const data = await res.json()
         setPhotos(data.data || [])
         setError(null)
       } catch (err) {

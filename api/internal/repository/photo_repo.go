@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 
 	"github.com/aton/atonWeb/api/internal/domain"
@@ -112,12 +114,25 @@ func (r *photoRepo) UpdateDisplayOrder(id uint, order int) error {
 }
 
 func (r *photoRepo) BatchUpdateDisplayOrder(orders []DisplayOrderUpdate) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		for _, update := range orders {
-			if err := tx.Model(&domain.Photo{}).Where("id = ?", update.ID).Update("display_order", update.Order).Error; err != nil {
-				return err
-			}
-		}
+	if len(orders) == 0 {
 		return nil
+	}
+
+	// Build CASE WHEN SQL for batch update
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		ids := make([]uint, len(orders))
+		cases := ""
+		for i, update := range orders {
+			ids[i] = update.ID
+			cases += fmt.Sprintf("WHEN id = %d THEN %d ", update.ID, update.Order)
+		}
+
+		// Single SQL: UPDATE photos SET display_order = CASE ... END WHERE id IN (...)
+		sql := fmt.Sprintf(
+			"UPDATE photos SET display_order = CASE %s END WHERE id IN (?)",
+			cases,
+		)
+
+		return tx.Exec(sql, ids).Error
 	})
 }
